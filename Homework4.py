@@ -53,19 +53,24 @@ def Dmatrix(n):   #function that created the D  matrix for the 1,4 method
 D = Dmatrix(n)   #call D matrix function
 A3 = D.todense()
 
-def rhsfunc14(t, u, CFL, D):   #deifne the ODE for the 14 method
-   return u + (CFL * (D @ u))
-
 u0func = lambda x: 10 * np.cos((2 * np.pi * x) / L) + 30 * np.cos((8 * np.pi * x) / L)   #define the initial condition with n=128
 u0 = u0func(xvals)
 
-sol14 = scipy.integrate.solve_ivp(lambda t, u: rhsfunc14(t, u, CFL, D), trange, u0, t_eval=tvals)   #solve the ODE with 14 method
+def solve14(u0, D, CFL, tvals, xvals):
+   u = u0
+   sollist = np.zeros((len(tvals), len(xvals)))
+   for i in range(len(tvals)):
+      u = u + CFL * (D @ u)
+      sollist[i, :] = u
+   return sollist
 
-A5 = np.array([sol14.y[:, -1]]).T
+sol14 = solve14(u0, D, CFL, tvals, xvals)
+
+A5 = np.array([sol14[-1, :]]).T
 
 '''X, T = np.meshgrid(xvals, tvals)   #plot the surface of the solutions of the ODE
 fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
-surf = ax.plot_surface(X,T,sol14.y.T,cmap='magma')
+surf = ax.plot_surface(X,T,sol14,cmap='magma')
 plt.xlabel('x')
 plt.ylabel('time')
 plt.show()   #'''
@@ -111,36 +116,44 @@ C = Cmatrix(n, CFL)
 A7 = B.todense()   #correctly formats the B and C matrices to submit
 A8 = C.todense()
 
-def RHSfuncLU(t, u, C, LUdecompB):   #function defining the ODE using LU decomposition
-   u1 = LUdecompB.solve(C @ u)
-   return u1
+def solveLU(u0, LUdecompB, C, tvals, xvals):
+   u = u0
+   sollist = np.zeros((len(tvals), len(xvals)))
+   for i in range(len(tvals)):
+      u = LUdecompB.solve(C @ u)
+      sollist[i, :] = u
+   return sollist
 
 LUdecompB = scipy.sparse.linalg.splu(B)
-solLU = scipy.integrate.solve_ivp(lambda t, u: RHSfuncLU(t, u, C, LUdecompB), trange, u0, t_eval=tvals)   #solves the ODE using LU decomposition
+solLU = solveLU(u0, LUdecompB, C, tvals, xvals)
 
-A9 = np.array([solLU.y[:, -1]]).T
+A9 = np.array([solLU[-1, :]]).T
 
 '''X, T = np.meshgrid(xvals, tvals)   #plot the surface of the solutions of the ODE
 fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
-surf = ax.plot_surface(X,T,solLU.y.T,cmap='magma')
+surf = ax.plot_surface(X,T,solLU,cmap='magma')
 plt.xlabel('x')
 plt.ylabel('time')
 plt.show()   #'''
 
-def RHSfuncBC(t, u, B, C):   #function defining the ODE using bicgstab
-   (u1, info) = scipy.sparse.linalg.bicgstab(B, C @ u)
-   return u1
+def solveBC(u0, B, C, tvals, xvals):
+   u = u0
+   sollist = np.zeros((len(tvals), len(xvals)))
+   for i in range(len(tvals)):
+      (u, info) = scipy.sparse.linalg.bicgstab(B, C @ u)
+      sollist[i, :] = u
+   return sollist
 
 timestart = time.time()
-solBC = scipy.integrate.solve_ivp(lambda t, u: RHSfuncBC(t, u, B, C), trange, u0, t_eval=tvals)   #solve the ODE with bicgstab
+solBC = solveBC(u0, B, C, tvals, xvals)
 timeend = time.time()
 elapsedtime = timeend - timestart   #gives the total runtime of the solve
 
-A10 = np.array([solBC.y[:, -1]]).T
+A10 = np.array([solBC[-1, :]]).T
 
 '''X, T = np.meshgrid(xvals, tvals)   #plot the surface of the solutions of the ODE
 fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
-surf = ax.plot_surface(X,T,solBC.y.T,cmap='magma')
+surf = ax.plot_surface(X,T,solBC,cmap='magma')
 plt.xlabel('x')
 plt.ylabel('time')
 plt.show()   #'''
@@ -183,9 +196,9 @@ A12 = np.linalg.norm(exact128 - A9)
 n = 256
 xvals = np.linspace(-L, L, n, endpoint=False)
 
-dx = xvals[1] - xvals[0]   #calculate dx and dt
+'''dx = xvals[1] - xvals[0]   #calculate dx and dt
 dt = tvals[1] - tvals[0]
-CFL = (alpha * dt) / (dx ** 2)   #calculate the CFL number lambda
+CFL = (alpha * dt) / (dx ** 2)   #calculate the CFL number lambda'''
 
 D256 = Dmatrix(n)   #call functions that create the D, B, and C matrices of size 256x256
 B256 = Bmatrix(n, CFL)
@@ -193,17 +206,17 @@ C256 = Cmatrix(n, CFL)
 
 u0 = u0func(xvals)   #get initial condition with 256 values
 
-sol14_256 = scipy.integrate.solve_ivp(lambda t, u: rhsfunc14(t, u, CFL, D256), trange, u0, t_eval=tvals)   #solve the ODE
+sol14_256 = solve14(u0, D256, CFL, tvals, xvals)
 
 LUdecompB256 = scipy.sparse.linalg.splu(B256)
-solLU_256 = scipy.integrate.solve_ivp(lambda t, u: RHSfuncLU(t, u, C256, LUdecompB256), trange, u0, t_eval=tvals)   #solve the ODE
+solLU_256 = solveLU(u0, LUdecompB256, C256, tvals, xvals)
 
-A13 = np.linalg.norm(exact256 - sol14_256.y[:, -1])   #calculate the norm differences for the 14 and CN methods for n=256
-A14 = np.linalg.norm(exact256 - solLU_256.y[:, -1])
+A13 = np.linalg.norm(exact256 - sol14_256[-1, :])   #calculate the norm differences for the 14 and CN methods for n=256
+A14 = np.linalg.norm(exact256 - solLU_256[-1, :])
 
-'''My values for the maximum of |g(z;lambda)| are both 1 and I believe that they should be different. Am
-I doing the maximization correctly?
-
-My surface plots for all of my solutions are growing in time instead of dissipating and I am not sure why.
-Is my CFL number correct? Is there an incorrect negative sign somewhere? This is happening for all of my 
-solving methods.'''
+'''X, T = np.meshgrid(xvals, tvals)   #plot the surface of the solutions of the ODE
+fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
+surf = ax.plot_surface(X,T,sol14_256,cmap='magma')
+plt.xlabel('x')
+plt.ylabel('time')
+plt.show()   #'''
