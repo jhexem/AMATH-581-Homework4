@@ -59,9 +59,10 @@ u0 = u0func(xvals)
 def solve14(u0, D, CFL, tvals, xvals):
    u = u0
    sollist = np.zeros((len(tvals), len(xvals)))
-   for i in range(len(tvals)):
+   sollist[0, :] = u0
+   for i in range(len(tvals)-1):
       u = u + CFL * (D @ u)
-      sollist[i, :] = u
+      sollist[i+1, :] = u
    return sollist
 
 sol14 = solve14(u0, D, CFL, tvals, xvals)
@@ -119,9 +120,10 @@ A8 = C.todense()
 def solveLU(u0, LUdecompB, C, tvals, xvals):
    u = u0
    sollist = np.zeros((len(tvals), len(xvals)))
-   for i in range(len(tvals)):
+   sollist[0, :] = u0
+   for i in range(len(tvals)-1):
       u = LUdecompB.solve(C @ u)
-      sollist[i, :] = u
+      sollist[i+1, :] = u
    return sollist
 
 LUdecompB = scipy.sparse.linalg.splu(B)
@@ -139,9 +141,10 @@ plt.show()   #'''
 def solveBC(u0, B, C, tvals, xvals):
    u = u0
    sollist = np.zeros((len(tvals), len(xvals)))
-   for i in range(len(tvals)):
+   sollist[0, :] = u0
+   for i in range(len(tvals)-1):
       (u, info) = scipy.sparse.linalg.bicgstab(B, C @ u)
-      sollist[i, :] = u
+      sollist[i+1, :] = u
    return sollist
 
 timestart = time.time()
@@ -190,13 +193,13 @@ for line in file1024:
    i += 1
 file1024.close()
 
-A11 = np.linalg.norm(exact128 - A5)   #calculate the norm differences for the 14 and CN methods
-A12 = np.linalg.norm(exact128 - A9)
+A11 = np.linalg.norm(exact128 - np.ndarray.flatten(A5))   #calculate the norm differences for the 14 and CN methods
+A12 = np.linalg.norm(exact128 - np.ndarray.flatten(A9))
 
 n = 256
 xvals = np.linspace(-L, L, n, endpoint=False)
 
-'''dx = xvals[1] - xvals[0]   #calculate dx and dt
+dx = xvals[1] - xvals[0]   #calculate dx and dt
 dt = tvals[1] - tvals[0]
 CFL = (alpha * dt) / (dx ** 2)   #calculate the CFL number lambda'''
 
@@ -220,3 +223,8 @@ surf = ax.plot_surface(X,T,sol14_256,cmap='magma')
 plt.xlabel('x')
 plt.ylabel('time')
 plt.show()   #'''
+
+print(A11)
+print(A12)
+print(A13)
+print(A14)
