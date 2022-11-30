@@ -218,19 +218,48 @@ solLU_256 = solveLU(u0_256, LUdecompB256, C256, tvals_256, xvals_256)
 A13 = np.linalg.norm(exact256 - sol14_256[-1, :])   #calculate the norm differences for the 14 and CN methods for n=256
 A14 = np.linalg.norm(exact256 - solLU_256[-1, :])
 
-'''X, T = np.meshgrid(xvals, tvals_256)   #plot the surface of the solutions of the ODE
-fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
-surf = ax.plot_surface(X,T,solLU_256,cmap='magma')
-plt.xlabel('x')
-plt.ylabel('time')
-plt.show()   #'''
+#------Presentation Problem------#
 
-plt.plot(xvals_256, solLU_256[-1, :])
-plt.plot(xvals_256, exact256)
+from matplotlib import cm
+
+x = np.linspace(-L, L, 20 * L + 1)
+t = np.array([np.linspace(0, 5, 100)])
+
+fig1 = plt.figure()
+ax1 = plt.axes(projection = '3d')
+X, T = np.meshgrid(xvals_256, tvals_256)
+
+ax1.plot_surface(X, T, solLU_256, cmap = cm.inferno)
+ax1.set_xlabel('x axis')
+ax1.set_ylabel('t axis')
+ax1.set_zlabel('$u(x, t)$')
+ax1.set_title('Solution to the Heat Equation Using the Crank-Nicolson Method')
+ax1.view_init(elev=30, azim=135)
+plt.savefig('Homework4Plot2.png')
 plt.show()
 
-'''Why is my A13 giving me NaN values when my solve14 function works perfectly in the n=128 case?
-Why is my A14 incorrect? The plots of my solution and the exact solution look extremely close.
-What should the norm difference be?'''
+#------Presentation Problem------#
 
-'''My solve14 function starts blowing up to infinity at step 19 in my for loop and I am not sure why.'''
+'''times = np.arange(0, 2 + (dt * 5), dt* 5)
+
+def frame(t):
+   time = np.where(times == t)
+   plt.plot(xvals_256, np.ndarray.flatten(solLU_256[time, :]))
+   plt.ylim([-40, 40])
+   plt.title('Heat Equation Solution'.format(t))
+   plt.savefig('image{0}.png'.format(t), transparent=False, facecolor='white')
+   plt.close()
+
+import imageio
+
+for t in times:
+   frame(t)
+   
+frames = []
+for t in times:
+   pic = imageio.imread('image{0}.png'.format(t))
+   frames.append(pic)
+   
+imageio.mimsave('Homework4.gif', # output gif
+                frames,          # array of input frames
+                fps = 30)         # optional: frames per second'''
