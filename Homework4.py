@@ -197,34 +197,40 @@ A11 = np.linalg.norm(exact128 - np.ndarray.flatten(A5))   #calculate the norm di
 A12 = np.linalg.norm(exact128 - np.ndarray.flatten(A9))
 
 n = 256
-xvals = np.linspace(-L, L, n, endpoint=False)
+xvals_256 = np.linspace(-L, L, n, endpoint=False)
 
-dx = xvals[1] - xvals[0]   #calculate dx and dt
-dt = tvals[1] - tvals[0]
+dx = xvals_256[1] - xvals_256[0]   #calculate dx and dt
+dt = (CFL * (dx ** 2)) / alpha
+tvals_256 = np.arange(0, 2 + dt, dt)
 CFL = (alpha * dt) / (dx ** 2)   #calculate the CFL number lambda'''
 
 D256 = Dmatrix(n)   #call functions that create the D, B, and C matrices of size 256x256
 B256 = Bmatrix(n, CFL)
 C256 = Cmatrix(n, CFL)
 
-u0 = u0func(xvals)   #get initial condition with 256 values
+u0_256 = u0func(xvals_256)   #get initial condition with 256 values
 
-sol14_256 = solve14(u0, D256, CFL, tvals, xvals)
+sol14_256 = solve14(u0_256, D256, CFL, tvals_256, xvals_256)
 
 LUdecompB256 = scipy.sparse.linalg.splu(B256)
-solLU_256 = solveLU(u0, LUdecompB256, C256, tvals, xvals)
+solLU_256 = solveLU(u0_256, LUdecompB256, C256, tvals_256, xvals_256)
 
 A13 = np.linalg.norm(exact256 - sol14_256[-1, :])   #calculate the norm differences for the 14 and CN methods for n=256
 A14 = np.linalg.norm(exact256 - solLU_256[-1, :])
 
-'''X, T = np.meshgrid(xvals, tvals)   #plot the surface of the solutions of the ODE
+'''X, T = np.meshgrid(xvals, tvals_256)   #plot the surface of the solutions of the ODE
 fig,ax = plt.subplots(subplot_kw = {"projection":"3d"},figsize=(7,7))
-surf = ax.plot_surface(X,T,sol14_256,cmap='magma')
+surf = ax.plot_surface(X,T,solLU_256,cmap='magma')
 plt.xlabel('x')
 plt.ylabel('time')
 plt.show()   #'''
 
-print(A11)
-print(A12)
-print(A13)
-print(A14)
+plt.plot(xvals_256, solLU_256[-1, :])
+plt.plot(xvals_256, exact256)
+plt.show()
+
+'''Why is my A13 giving me NaN values when my solve14 function works perfectly in the n=128 case?
+Why is my A14 incorrect? The plots of my solution and the exact solution look extremely close.
+What should the norm difference be?'''
+
+'''My solve14 function starts blowing up to infinity at step 19 in my for loop and I am not sure why.'''
